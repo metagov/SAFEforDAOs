@@ -1,7 +1,8 @@
 # SAFEforDAOs
 A computational Simple Agreement for Future Equity (SAFE) for DAOs and other digitally-constituted organizations, plus a clause-to-code mapping between legal SAFEs and computational SAFEs to verify their strategic equivalence. Below is a diagram of the compositional game used to model the SAFE.
 
-<img width="2061" alt="Screen Shot 2023-01-27 at 1 47 53 PM" src="https://user-images.githubusercontent.com/40670744/215169706-41ea459c-7fd0-47e1-be07-11a1b9b2a703.png">
+<img width="1994" alt="Screen Shot 2023-01-27 at 4 51 49 PM" src="https://user-images.githubusercontent.com/40670744/215208439-3541055e-8603-4fa3-b3f0-3e4771e4bfcb.png">
+
 
 Simple Agreements for Future Equity (SAFEs) are a popular class of legal contracts that investors and companies use to fund early-stage startups. They have been used across several industries to help investors join early funding rounds without dilution and to help companies receive funding without the hassle of organizing a formal round. Startup DAOs have similar problems as these traditional startups—they want to raise funding quickly while promising investors tokens from a token sale, but many of these projects do not want to and should not create a token too early. If DAOs could raise funding without direct token sales, many more projects could get off the ground.
 
