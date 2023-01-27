@@ -31,16 +31,10 @@ interface ISAFE {
         uint256 timestamp
     );
 
-    event Termination(
-        address indexed investor,
-        uint256 timestamp,
-        uint256 newValuation
-    );
-
     /**
-     * @dev Returns the valuation of the company in USD
+     * @dev Initializes the SAFE contract and allocates all shares to founders (msg.sender)
      */
-    function getValuation() external view returns (uint256);
+    function initialize(address safeAddress, uint256 numShares) external;
 
     /**
      * @dev Called by the Investor to initiate a SAFE Investment. This function is typically called after the legal contract is signed
@@ -48,12 +42,6 @@ interface ISAFE {
      * Note: This function can be called by anyone, but the company must approve the transaction to avoid unwarranted investments.
      */
     function triggerInvestment(address investor, uint256 amount) external;
-
-    /**
-     * @dev Called by the Investor to terminate the SAFE. This function is typically called after formal agreement. This function
-     * returns a bool indicating whether the agreement was successfully terminated.
-     */
-    function terminate(address investor) external returns (bool);
 
     /**
      * @dev Marks the end of a company; returns funds to investors based on priority.
@@ -64,19 +52,17 @@ interface ISAFE {
     function dissolution() external returns (bool);
 
     /**
-     * @dev Sets the discount rate for an investor.
-     *
-     * Note: Investor should be defined as a struct with a discount rate, a timestamp, and a number representing how much they invested
+     * @dev Initiates a Priced Round where the SAFE investments convert to shares in the company and the company asks for a total investment amount.
      */
-    function setDiscount(address investor) external;
-
-    /**
-     * @dev Initiates a Priced Round where the SAFE investments convert to shares in the company.
-     */
-    function startPricedRound() external;
+    function startPricedRound(uint256 ask, uint256 preMoneyValuation) external;
 
     /**
      * @dev Adds options to the cap table.
      */
-    function addOptions(uint256 ops) external;
+    function addOptions(uint8 ops) external;
+
+    /**
+     * @dev Returns the valuation of the company in USD
+     */
+    function getValuation() external view returns (uint256);
 }
