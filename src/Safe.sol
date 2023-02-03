@@ -7,7 +7,7 @@ import "src/interfaces/ISafe.sol";
 
 contract Safe is Ownable, ERC20, ISafe {
     address safeAddress;
-    mapping(address => uint256) approvedSAFEInvestorInvestments;
+    mapping(address => uint256) approvedInvestorInvestments;
 
     struct CapTable {
         uint256 numShares;
@@ -54,11 +54,11 @@ contract Safe is Ownable, ERC20, ISafe {
             "Only the safe can trigger an investment"
         );
         require(
-            approvedSAFEInvestorInvestments[investor],
+            approvedInvestorInvestments[investor],
             "Investor must be approved"
         );
         require(
-            approvedSAFEInvestorInvestments[investor] == amount,
+            approvedInvestorInvestments[investor] == amount,
             "Investor must be approved for this amount"
         );
         newSAFEMoney(investor, amount, postMoneyValuation);
@@ -68,7 +68,7 @@ contract Safe is Ownable, ERC20, ISafe {
         public
         onlyOwner
     {
-        approvedSAFEInvestorInvestments[investor] = investment;
+        approvedInvestorInvestments[investor] = investment;
     }
 
     /**
@@ -87,14 +87,11 @@ contract Safe is Ownable, ERC20, ISafe {
         );
         safeCapTable.investors.push(investor);
         uint8 percentage = uint8(cash / postMoneyValuation);
-        // rebalance cap table
+        // rebalance cap table and set new valuation
         safeCapTable.shareholderPercentages[_owner] -= percentage;
         safeCapTable.shareholderPercentages[investor] = percentage;
         safeCapTable.valuation = postMoneyValuation;
-        // calculate and transfer shares
-        uint256 shares = (safeCapTable.numShares * percentage) / 100;
-        _approve(_owner, address(this), shares);
-        _transferFrom(_owner, investor, shares);
+
         emit NewMoney(investor, cash, percentage, block.timestamp);
     }
 
@@ -126,12 +123,25 @@ contract Safe is Ownable, ERC20, ISafe {
         return safeCapTable.valuation;
     }
 
-    // TODO: Discuss and set Priced Round logic
-    function startPricedRound(uint256 ask, uint256 preMoneyValuation)
+
+    // This function is when the shares convert and a new round is initiated
+    function startPricedRound(uint256 ask, address[] calldata investors, uint256 preMoneyValuation)
         external
         override
         onlyOwner
-    {}
+    {
+        // convert SAFE shares
+        // Add list of investors to the global investor list
+        // totalraise
+        // mint new shares = investment amount / price per share
+        // calculate and transfer shares
+        // uint256 shares = (safeCapTable.numShares * percentage) / 100;
+        // _approve(_owner, address(this), shares);
+        // _transferFrom(_owner, investor, shares);
+
+    }
+
+    //safeconversion function
 
     fallback() external payable {
         safeCapTable.valuation += msg.value;
