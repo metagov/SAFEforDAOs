@@ -7,7 +7,7 @@ import "src/interfaces/ISafe.sol";
 
 contract Safe is Ownable, ERC20, ISafe {
     address safeAddress;
-    uint constant PRECISION = 3;
+    uint constant PRECISION = 4;
     mapping(address => uint256) approvedInvestorInvestments;
 
     struct SafeCapTable {
@@ -19,9 +19,11 @@ contract Safe is Ownable, ERC20, ISafe {
 
     struct CapitalizationTable {
         uint256 numShares;
+        uint256 pricePerShare;
         address[] investors;
         mapping(address => uint16) shareholderPercentages;
         uint256 valuation;
+        uint256 totalInvested;
     }
 
     SafeCapTable safeCapTable;
@@ -42,7 +44,7 @@ contract Safe is Ownable, ERC20, ISafe {
         _owner = msg.sender;
         capTable.numShares = totalSupply();
         safeCapTable.valuation = 0;
-        // The founders own 100% of the company at the start; percentages have one decimal point; the below value is interpreted as 100.0%
+        // The founders own 100% of the company at the start; percentages have 4 decimal precision; the below value is interpreted as 100.0%
         safeCapTable.shareholders[msg.sender] = 1000;
     }
 
@@ -71,6 +73,7 @@ contract Safe is Ownable, ERC20, ISafe {
         public
         onlyOwner
     {
+        require(investment > 0, "Investment must be more than 0");
         approvedInvestorInvestments[investor] = investment;
     }
 
@@ -89,7 +92,7 @@ contract Safe is Ownable, ERC20, ISafe {
             "Investor already exists in cap table"
         );
         safeCapTable.investors.push(investor);
-        uint8 percentage = uint16(cash / postMoneyValuation);
+        uint16 percentage = percent(cash, postMoneyValuation);
         // rebalance cap table and set new valuation
         // safeCapTable.shareholderPercentages[_owner] -= percentage;
         safeCapTable.shareholderPercentages[investor] = percentage;
@@ -99,7 +102,7 @@ contract Safe is Ownable, ERC20, ISafe {
         emit NewMoney(investor, cash, percentage, block.timestamp);
     }
 
-    // TODO: Redo logic with new cap table logic
+    // TODO: Redo dissolution with new cap table logic
     function dissolution() external override onlyOwner returns (bool) {
         for (uint256 i = 0; i < safeCapTable.investors.length; i++) {
             address investor = safeCapTable.investors[i];
@@ -137,29 +140,53 @@ contract Safe is Ownable, ERC20, ISafe {
         override
         onlyOwner
     {
+        //TODO: add checks to make sure logic is flowing smoothly
+        // Convert SAFEs
         // get total dilution to founders and options
-        uint256 memory totalDilution = safeCapTable.totalInvested / safeCapTable.valuation;
+        uint16 memory totalDilution = uint16(safeCapTable.totalInvested / safeCapTable.valuation);
         // get the dilution percentage
-        totalDilution = totalDilution / 100;
-        // dilute founders
-        safeCapTable.shareholderPercentages[_owner] = totalDilution * safeCapTable.shareholderPercentages[_owner];
+        totalDilution = percent(totalDilution, 100);
+        // dilute founders: divide by 100 since percent returns a 4 digit value, not a decimal 
+        safeCapTable.shareholderPercentages[_owner] = (totalDilution * safeCapTable.shareholderPercentages[_owner]) / 100;
         // dilute options
-        safeCapTable.shareholderPercentages[address(this)] = totalDilution * safeCapTable.shareholderPercentages[address(this)];
-        // calculate new number of shares: totalShares / dilution %
-        // TODO: fix this to get the decimals right
-        uint256 memory newNumberShares = capTable.numShares / totalDilution;
+        safeCapTable.shareholderPercentages[address(this)] = (totalDilution * safeCapTable.shareholderPercentages[address(this)]) / 100;
+        // calculate new number of shares and mint ERC20 tokens for them
+        uint256 memory newNumberShares = capTable.numShares *  postMoneyValuation / safeCapTable.valuation;
+        _mint(safeAddress, (newNumberShares - capTable.numShares));
         // convert SAFE shares: safePercentage * newShares
+        for ( uint i = 0; i < safeCapTable.investors.length; i++ ) {
+            // add the SAFE investor to the cap table investor list
+            capTable.investors.push(safeCapTable.investors[i]);
+            // calculate the amount of shares the SAFE investor has
+            uint256 memory shares = (newNumberShares * safeCapTable.shareholderPercentages[safeCapTable.investors[i]]) / 100;
+            // update shareholder percentage in the cap table
+            capTable.shareholderPercentages[safeCapTable.investors[i]] = percent(shares, newNumberShares);
+            // allocate token shares to the SAFE investor
+            _transferFrom(safeAddress, safeCapTable.investors[i], shares);
+        }
         // convert option shares: optionPercentage * newShares
+        uint256 memory optionShares = (newNumberShares * safeCapTable.shareholderPercentages[address(this)]) / 100;
+        capTable.shareholderPercentages[address(this)] = percent(optionShares, newNumberShares);
         // recalculate _owner shares
+        uint256 memory ownerShares = (newNumberShares * safeCapTable.shareholderPercentages[_owner]) / 100;
+        capTable.shareholderPercentages[_owner] = percent(ownerShares, newNumberShares);
         // calculate price per share
-        // totalraise from postMoney - this.getValuation 
-        // check list of seriesA investors to make sure they are approved, then calculate their ownership by investment / price per share
-        // mint new shares for each owner
-        // verify and transfer shares something like:
-        // uint256 shares = (safeCapTable.numShares * percentage) / 100;
-        // _approve(_owner, address(this), shares);
-        // _transferFrom(_owner, investor, shares);
-
+        capTable.pricePerShare = postMoneyValuation / newNumberShares;
+        // find total raise
+        uint256 memory totalRaise = postMoneyValuation - safeCapTable.valuation;
+        // add series investors
+        for (uint i = 0; i < investors.length; i++) {
+            require(approvedInvestorInvestments[investors[i]] > 0, "Investor is not approved for this round");
+            capTable.investors.push(investors[i]);
+            // find the percentage of the company the investor owns
+            uint256 sharePercentage = percent(approvedInvestorInvestments[investors[i]], totalRaise); 
+            capTable.shareholderPercentages[investor[i]] = sharePercentage;
+            // calculate the number of shares the investor owns
+            uint256 memory shares = (newNumberShares * capTable.shareholderPercentages[investors[i]]) / 100;
+            // allocate token shares to the SAFE investor
+            _transferFrom(safeAddress, safeCapTable.investors[i], shares);
+        }
+        capTable.totalInvested += totalRaise;
     }
 
     function percent(uint numerator, uint denominator) internal returns(uint16 quotient) {
@@ -170,8 +197,6 @@ contract Safe is Ownable, ERC20, ISafe {
         uint _quotient =  ((_numerator / denominator) + 5) / 10;
         return ( uint16(_quotient));
   }
-
-    //safeconversion function?
 
     fallback() external payable {
         safeCapTable.valuation += msg.value;
