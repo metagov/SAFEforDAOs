@@ -26,6 +26,8 @@ contract Safe is Ownable, ERC20, ISafe {
         uint256 totalInvested;
     }
 
+    event CashOut(address indexed investor, uint256 amount);
+
     SafeCapTable safeCapTable;
     CapitalizationTable capTable;
 
@@ -197,6 +199,13 @@ contract Safe is Ownable, ERC20, ISafe {
         uint _quotient =  ((_numerator / denominator) + 5) / 10;
         return ( uint16(_quotient));
   }
+
+    function cashOut(uint256 amount) external {
+        require (capTable.shareholderPercentages[msg.sender] > 0, "You do not own any shares");
+        require (amount <= approvedInvestorInvestments[msg.sender], "You do not own enough shares");
+        _transferFrom(msg.sender, safeAddress, amount);
+        emit cashOut(msg.sender, amount);
+    }
 
     fallback() external payable {
         safeCapTable.valuation += msg.value;
