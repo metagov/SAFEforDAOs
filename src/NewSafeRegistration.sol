@@ -29,7 +29,7 @@ contract SAFEForDAORegistrationSummoner {
 
     function summonRegistration(
         bytes32 salt,
-        string calldata daoURI_,
+        uint256 numShares,
         address manager,
         address[] calldata contracts,
         bytes[] calldata data
@@ -40,14 +40,14 @@ contract SAFEForDAORegistrationSummoner {
         );
 
         if (manager == address(0)) {
-            Safe(registration).initialize(msg.sender, daoURI_);
+            Safe(registration).initialize(msg.sender, numShares);
         } else {
-            Safe(registration).initialize(msg.sender, manager, daoURI_);
+            Safe(registration).initialize(msg.sender, numShares);
         }
 
         results = _callContracts(contracts, data);
 
-        emit NewRegistration(msg.sender, daoURI_, registration);
+        emit NewRegistration(registration);
     }
 
     // =============================================================
