@@ -7,7 +7,16 @@ import "./Safe.sol";
 contract SAFEForDAORegistrationSummoner {
     event NewRegistration(address indexed safeAddress);
 
+    int length = 0;
+    // if (array1 != null)
+    //   length = array1.length;
+    // if (array2 != null)
+    //   length = array2.length;
+    // if (array1.length != length || array2.length != length)
+    error ArrayLengthsMismatch();
+
     address public template; /*Template contract to clone*/
+    Safe public safe;
 
     // Pass Safe.sol here
     constructor(address _template) {
@@ -33,16 +42,17 @@ contract SAFEForDAORegistrationSummoner {
         address manager,
         address[] calldata contracts,
         bytes[] calldata data
-    ) external returns (address registration, bytes[] memory results) {
+    ) external returns (address payable registration, bytes[] memory results) {
         registration = Clones.cloneDeterministic(
             template,
             _saltedSalt(msg.sender, salt)
         );
 
         if (manager == address(0)) {
-            Safe(registration).initialize(msg.sender, numShares);
+            //note: where did we initialize SAFE?
+            safe(registration).initialize(msg.sender, numShares);
         } else {
-            Safe(registration).initialize(msg.sender, numShares);
+            safe(registration).initialize(msg.sender, numShares);
         }
 
         results = _callContracts(contracts, data);

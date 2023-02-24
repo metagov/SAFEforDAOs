@@ -2,20 +2,15 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/Counter.sol";
+import "../src/Safe.sol";
 
-contract CounterTest is Test {
-    Counter public counter;
+contract SafeTest is Test {
+    Safe public safe;
 
     function setUp() public {
-        counter = new Counter();
-        counter.setNumber(0);
+        safe = new Safe();
     }
 
-    function testPercent() {}
+    function testPercent() public {}
 
-    function testSetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
-    }
 }
