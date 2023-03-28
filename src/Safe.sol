@@ -64,7 +64,7 @@ contract Safe is Ownable, ERC20 {
     function initialize(address _safeAddress, uint256 _numShares, address _owner)
         external
     {
-        require(_safeAddress != address(0x0), "Safe must already be initialized");
+        require(_safeAddress != address(0x0), "Safe already initialized");
         safeAddress = _safeAddress;
         this.transferOwnership(_owner);
         _mint(safeAddress, _numShares);

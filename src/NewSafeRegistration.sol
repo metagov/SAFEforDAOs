@@ -8,7 +8,16 @@ contract SAFEForDAORegistrationSummoner {
     event NewRegistration(address indexed safeAddress);
     error ArrayLengthsMismatch();
 
+    int length = 0;
+    // if (array1 != null)
+    //   length = array1.length;
+    // if (array2 != null)
+    //   length = array2.length;
+    // if (array1.length != length || array2.length != length)
+    error ArrayLengthsMismatch();
+
     address public template; /*Template contract to clone*/
+    Safe public safe;
 
     // Pass Safe.sol here
     constructor(address _template) {
